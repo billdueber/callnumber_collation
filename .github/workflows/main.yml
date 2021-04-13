@@ -1,6 +1,17 @@
 name: Ruby
 
-on: [push,pull_request]
+
+# Currently ignoring everything. Change
+# 'branches-ignore' to just 'branches' when ready to start 
+# running tests
+
+on:
+  push:
+    branches-ignore:
+      - main
+  pull_request:
+    branches-ignore:
+      - main
 
 jobs:
   build:
@@ -10,9 +21,9 @@ jobs:
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
       with:
-        ruby-version: 2.6.6
+        ruby-version: [ 2.6.x, 2.7.x, 3.x.x ]
     - name: Run the default task
       run: |
-        gem install bundler -v 2.2.14
+        gem install bundler -v 2.2.16
         bundle install
         bundle exec rake
