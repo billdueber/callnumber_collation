@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+
+require "callnumber_collation"
+
+puts CallnumberCollation::LC.new(ARGV.join(' ')).normalized
