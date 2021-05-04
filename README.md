@@ -32,6 +32,11 @@ c.letters #=> qa
 c.normalized #=> "qa142.77 .c5 d66 1990 v.1"
 c.collation_key #=> "qa   3142.77 c5 d66 1990 v.1"
 c.collation_key_base #=> "qa   3142.77 c5 d66 1990" (iffy)
+
+# Use the collation key to sort
+sorted = my_raw_callnumbers.map{|cn| CallnumberCollation::LC.new(cn)}.
+  sort{|a,b| a.collation_key <=> b.collation_key}
+
 ```
 
 ## LC (Library of Congress)
