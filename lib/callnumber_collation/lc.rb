@@ -16,11 +16,12 @@ module CallnumberCollation
 
     BASE_REGEX = /\A(#{LETTERS})\s*(#{DIGITS})(?:\.(#{DIGITS}))?(#{CUTTER_STUFF})?\s*(#{YEAR})?(.*)/
 
-    attr_accessor :original, :letters, :digits, :decimal, :cutter_stuff, :year, :rest
+    attr_accessor :original, :normalized_original, :letters, :digits, :decimal, :cutter_stuff, :year, :rest
 
     def initialize(lc)
-      @original = lc.strip.downcase
-      match = BASE_REGEX.match(@original)
+      @original = lc
+      @normalized_original = collapse_strip(@original.downcase)
+      match = BASE_REGEX.match(@normalized_original)
       if match
         @letters = (match[1] or '').strip
         @digits = (match[2] or '').strip
@@ -33,45 +34,51 @@ module CallnumberCollation
       end
     end
 
+    # A constructor that throws an error on invalid
+    def self.new!(lc)
+      callnum = self.new(lc)
+      raise CallnumberCollation::ParseError.new(lc) unless callnum.valid?
+      callnum
+    end
+
     # If we have something weird where the final cutter includes some
     # extraneous crap, immediately followed by a year, the regex
     # won't assign the year correctly.
     def year_and_rest(year, rest)
       match = /\A\s*(#{YEAR})(.*)/.match(rest)
       return [year, rest] if year or !match
-      puts "Fixing!"
       [match[1], match[2].strip]
     end
 
     def normalized_number
-      if decimal == ''
-        digits
-      else
-        "#{digits}.#{decimal}"
-      end
+      return digits unless decimal?
+      "#{digits}.#{decimal}"
     end
 
     def collatable_cutter_stuff
-      return '' if cutter_stuff == ''
-      cutter_stuff.gsub('.', ' ').gsub(/\s+/, ' ').strip
+      return '' unless cutter?
+      collapse_strip(cutter_stuff.gsub('.', ' '))
     end
 
     def normalized_cutter_stuff
-      return '' if cutter_stuff == ''
+      return '' unless cutter?
       '.' + collatable_cutter_stuff
     end
 
     def normalized_rest
-      rest.gsub(/\s+/, ' ').strip
+      collapse_strip @rest
     end
 
     def normalized
-      return @original unless valid?
-      "#{letters}#{normalized_number} #{normalized_cutter_stuff} #{year} #{rest}".gsub(/\s+/, ' ').strip
+      if valid?
+        collapse_strip "#{letters}#{normalized_number} #{normalized_cutter_stuff} #{year} #{rest}"
+      else
+        @normalized_original
+      end
     end
 
     def normalized_components
-      return '' unless valid?
+      return ['', '', '', '', @normalized_original] unless valid?
       [letters, normalized_number, normalized_cutter_stuff, year, rest]
     end
 
@@ -86,7 +93,7 @@ module CallnumberCollation
         rest: #{rest}
         }
       else
-        "<invalid>"
+        "<invalid #{normalized_original}>"
       end
     end
 
@@ -99,25 +106,36 @@ module CallnumberCollation
     end
 
     def collatable_decimal
-      if decimal == ''
-        ''
-      else
-        ".#{decimal}"
-      end
+      return '' unless decimal?
+      ".#{decimal}"
     end
 
     def collation_key_base
-      return @original unless valid?
+      return @normalized_original unless valid?
       "#{collatable_letters}#{collatable_digits}#{collatable_decimal} #{collatable_cutter_stuff} #{year}".strip
     end
 
     def collation_key
-      return @original unless valid?
-      "#{collation_key_base} #{rest}".strip
+      return @normalized_original unless valid?
+      "#{collation_key_base} #{normalized_rest}".strip
     end
 
     def valid?
       @valid
+    end
+
+    def cutter?
+      !(cutter_stuff.empty?)
+    end
+
+    def decimal?
+      !(decimal.empty?)
+    end
+
+    private
+
+    def collapse_strip(str)
+      str.gsub(/\s+/, ' ').strip
     end
 
   end
