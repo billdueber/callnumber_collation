@@ -34,6 +34,7 @@ module CallnumberCollation
       end
     end
 
+
     # A constructor that throws an error on invalid
     def self.new!(lc)
       callnum = self.new(lc)
@@ -82,6 +83,8 @@ module CallnumberCollation
       [letters, normalized_number, normalized_cutter_stuff, year, rest]
     end
 
+
+
     def pretty_print
       if valid?
         %Q{
@@ -118,6 +121,10 @@ module CallnumberCollation
     def collation_key
       return @normalized_original unless valid?
       "#{collation_key_base} #{normalized_rest}".strip
+    end
+
+    def to_hash
+      {letters: letters, number: normalized_number, cutters: collatable_cutter_stuff, year: year, rest: normalized_rest }
     end
 
     def valid?
